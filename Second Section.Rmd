@@ -1,0 +1,123 @@
+---
+title: "Second Section"
+author: "Tracie-Lynn Lamoreux"
+date: "2023-09-22"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Properties of least square estimators via siumaltions  
+
+Supose we know our true model is :  
+$ Y_i = 2+3X_1 + 5 * log(X_2) + \epsilon_i (i = 1..,n), \epsilon_i ~ N(0,1^2)$
+
+What are the true values for  
+$\beta_0 = 2$  
+$\beta_1 = 3$  
+$\beta_3 = 5$  
+
+Generare 100 $Y_i$ observations from the true poopulation regression model.
+
+```{r}
+n = 100
+beta_0 <- 2
+beta_1 <- 3
+beta_2 <- 5
+X1 <- seq(0,10,length.out = 100) ### This gneerates 100 equally spaced values from 1-10
+X2 <- runif(100) ### generates 100 uniform values
+
+error <- rnorm(n,0,1)
+Y <- beta_0 + beta_1*X1 + beta_2*log(X2) + error
+plot(Y,X1)
+plot(Y,X2)
+```
+
+The first figure shows a linear relationship between Y and X1 and a non linear relationship (or perhaps weaker) relationship between Y and X2.  
+
+Design a simple simulation to show betahat1 is an unbiased estimator of beta1
+
+```{r}
+B = 5000
+beta1hat = beta2hat = rep(NA,B)
+for (i in 1:B){
+  error = rnorm(n,0,1)
+  Y <- beta_0 + beta_1*X1 + beta_2*log(X2) + error
+  fit = lm(Y~X1+log(X2))
+  beta1hat[i] = fit$coefficients[[2]]
+  beta2hat[i] = fit$coefficients[[3]]
+  
+}
+
+mean(beta1hat)
+mean(beta2hat)
+
+hist(beta1hat, main = "Histogram of Beta1_Hat")
+abline(v=3,col = "red")
+hist(beta2hat, main = "Histogram of Beta1_Hat")
+abline(v=5,col = "blue")
+```
+
+  
+Propose an unbiased estimator for sigma 
+
+
+```{r}
+sum((Y - fit$fitted.values)^2) / (n-3)
+```
+
+
+### Regression Concepts  
+When asked to state true population regression model, a fellow student writes : 
+
+$ E(Y_i) = \beta_0 + \beta_1 X_i + \epsilon_i    (i = 1,..,n)$ 
+
+This is false E(y_i) is a parameter and therefre a constant with no randomness the true model is 
+
+$ Y_i = \beta_0 + \beta_1 X_1 + \epsilon_i (i = 1, .. , n)$  
+
+For a given data set will the training MSE always be smaller than test MSE?  
+No. It is possible that training MSE could be larger depending on how you create the training and test set. In general we expect that it will be smaller, but not always a guarantee.  
+
+The expected test MSE is defined as : E[y_o - f(x_o)hat]^2. Here y_o is from our training set and f(x_o)hat is our model built from training. We evaluate this model on the x_o values from our test set. 
+False. Y_o should be from our test set.  
+
+The bias-variance decomposition tells us that sometimes reducing the complexity of our model (for example removing a predictor), can actually improve our expected test MSE.  
+True, the decomposition tells us there is a tradeoff between complexity. Going with the most flexible model will not always five us the smallest expected test MSE.  
+
+The expected test MSE can be smaller than irreducible error.  
+False, the expected test MSE is bounded by the irreducible error.  
+
+The training MSE can be smaller than the irreducible error.  
+True, we can make this go to 0, but this will lead to overfitting.  
+
+
+What happens when we add a predictor to our model that is a combination of others?  
+This is bad because if we have a predictor that is a linear combinatoin of others, this will result in rank deficient (it is not full rank). If this matrix is not full rank then we are not able to obtain unique least square estimators which makes it problematic to fit a model. This training / fitting a model will break down. You will get an error message.  
+REMEMBER: Full rank is a matrix whose columns are linearly ind. (assuming n > p) there is not redundant information in a predictors and the matrix is full rank. They are allowed to be correlated, but they cannot be perfectly correlated (or exact linear combinations)  
+
+How does the RSS behave each time we add a predictor to the model?  
+
+RSS is proportion to training MSE, increasing coplexity will result in the model getting closer to the full model resulting in a smaller RSS.
+
+For a data set we cannot obtain E[test MSE]  
+suppose 
+
+$Y = \beta_0 + \beta_1 X_1 + \beta_2 X_1^2 + \epsilon$  
+
+Suppose all beta = 1, and errors are normally distributed. Generate n = 100 obs for y under this model
+
+
+```{r}
+n = 100
+X1 <- seq(0,5,length.out = 100)
+error <- rnorm(n,0,1)
+Y <- 1 + X1+X1^2 + error
+data_sim = data.frame(X1,Y)
+plot(Y,X1)
+
+```
+
+

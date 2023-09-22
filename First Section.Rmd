@@ -1,0 +1,127 @@
+---
+title: "HW 1"
+author: "Tracie-Lynn Lamoreux"
+date: "2023-09-22"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+### Problem 1: Bias-Variance Decomposition:  
+
+Describe in plain language what the quantities mean.  
+MSE : *This stands for mean-squared error and it measures the average (squared) difference between what we observe and what we predict*  
+Training MSE: *It is computed using the training data: and it evaluates the discrepancy between our observed response and predicted value in the training set*  
+Expected Test MSE: *This can be conceptualized as the `true average test MSE` that we would obtain if we could repeatedly estimate f using a large number of training sets and evaluate each of them at * $x_o$ *The expected test MSE can be decomposed into three quantities: bias, variance, and irreducible error.*  
+Bias: *Refers to the error that is introduced by approximating our real-life phenomenon*  
+Variance: *Refers to the amount by which our model would change if we had estimated it using a different training set.*  
+Irreducible Error: *Refers to the inherent noise and randomness that we observe in Y. No matter how well we estimate our model f, we cannot reduce the error introduced by this irreducible error*  
+
+  
+Why do the five curves have the shape they do?  
+Variance, the models tend to be more complex/flexible will have higher variance because they tend to fit the  data better. Therefor any change in the training set could lead substantial changes in the fitted model. On the other hand, as complexity increases and fits the data better, the bias (our approximation error in estimating f) will decrease. Irreducible error is a constant, and a source of randomness. Since the expected test MSE can be broken down into $bias^2$, variance, and irreducble error, the U-shape curve results from the trade off since the trained model will be a better approximation of the training set. Training MSE will tend to decrease as flexibility of the model increases since the training mdoel will be a better appoximation of the training set.  
+
+Very Complex (Versus less complex) for supervised learning. What circumstance a more flexible approach is preferred?  
+*Advantages* : Very flexible models have low bias, which means it can handle non-linear relationships. If the true model is highly non-linear, this is a setting that could benefit from a complex model.  
+*Disadvantages* : Very flexible might lead to over fitting- and could be subject to high variance. This could be highlighted if the true model is not as complex. We would want to use something less complex if the model we have evidence (base don exploratory analysis or domain knowledge) if the relationship between Y and the predictors is relatively simple. It is also better if we have a small number of predictors.  
+
+If you collect a data set of (n = 100) containing a single predictor and a quantitative response Y. You fit a linear model to the data as well as a seperate cubic regression, i.e., $ Y = \beta_0 + \beta_1 + \beta X^2+\beta X^3 + \epsilon$. Suppose the true relationship between X and Y is linear. Consider training MSE for this model as well as training MSE for cubic regression. Would we expect one to be lower? Not enough information?  
+*We would expect the training MSE would be smaller for the cubic regression model since it is more complex than the standard model.*  
+
+How about the test MSE?  
+*Since the true relationship is linear we would expect that the simple linear model would perform better and will eachieve the sweet spot of the traefoff. We would expect the cubic to overfit the data and suffer from high variance.*  
+
+### Interpreting MLR  
+
+If the coefficient for a predictor in linear regression is small, should we include it in our model?  
+*The magnitude of a coefficient does not determine importance. The magnitude is only affected by the scale of the predictor. To assess the importance there other metrics we consider.*  
+
+### Multiple Linear Regression  
+
+```{r}
+library(ISLR2)
+boston <- Boston
+```
+
+How many rows?  
+`r dim(boston)[1]`  
+Mean per capita?  
+`r mean(boston$crim)`  
+Avg. Crime rate for subrubs not near river  
+
+```{r}
+char_river_0 <- boston %>% filter(boston$chas == 0) 
+char_river_1 <- boston %>% filter(boston$chas == 1) 
+```
+
+The avg crime rate for those not by the river is `r mean(char_river_0$crim)` whereas those by the river is `r mean(char_river_1$crim)`  
+
+Fit a simple linear model with crim as the repsonse and lstat as predictor. Describe results.  
+
+```{r}
+model<- lm(crim ~ lstat, data = boston)
+summary(model)
+```
+  
+Explain in words how we fit a model.  
+*The procedure for fitting a model is known as least squares estimation. The idea is we find a line as close as possible to all observations for the variable crim. How we define close? We hope the residual difference between our line for crim rate and actual observations is as small as possible*
+
+## Split the data.
+```{r}
+set.seed(1)
+n = dim(Boston)[1]
+train_index = sample(1:n,n/2,replace=F)
+train_boston = Boston[train_index,]
+test_boston = Boston[-train_index,]
+```
+
+```{r}
+M1 = lm(medv~lstat,data=train_boston)
+M5 = lm(medv~poly(lstat,5,raw=TRUE),data=train_boston)
+M9 = lm(medv~poly(lstat,9,raw=TRUE),data=train_boston)
+
+## training MSE from M1
+mean((train_boston$medv - M1$fitted.values)^2)
+
+## predicted values from the test set
+Yhat_test = predict(M1,newdata=test_boston)
+```
+
+fit 9 models of increasing complexity on the training set:  
+M1 = lm(medv~poly(lstat,1,raw=TRUE),data=train_boston)  
+M2 = lm(medv~poly(lstat,2,raw=TRUE),data=train_boston)  
+M3 = lm(medv~poly(lstat,2,raw=TRUE),data=train_boston)  
+## ..  
+## ..  
+M9 = lm(medv~poly(lstat,9,raw=TRUE),data=train_boston)  
+
+obtain the training MSE and test MSE for each of these models. Create a plot where the training MSE is on the y-axis and the model complexity (1 - 9) is on the x-axis. Create a similar plot for the test MSE. 
+
+```{r}
+train_MSE <- numeric(9)
+test_MSE <- numeric(9)
+for (i in 1:9) {
+  if (i == 1) {
+    model = lm(medv ~ lstat, data=train_boston)
+  } else {
+    model = lm(medv ~ poly(lstat, i, raw=TRUE), data=train_boston)
+  }
+  
+  # Training MSE
+  train_MSE[i] = mean((train_boston$medv - predict(model, newdata=train_boston))^2)
+  
+  # Test MSE
+  Yhat_test = predict(model, newdata=test_boston)
+  test_MSE[i] = mean((test_boston$medv - Yhat_test)^2)
+}
+
+par(mfrow=c(2,1))
+
+# Training MSE
+plot(1:9, train_MSE, type="b", col="blue", xlab="Model Complexity", ylab="Training MSE",
+     main="Training MSE vs. Model Complexity")
+plot(1:9, test_MSE, type="b", col="red", xlab="Model Complexity", ylab="Test MSE",
+     main="Test MSE vs. Model Complexity")
+```
